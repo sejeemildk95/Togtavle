@@ -2,44 +2,53 @@
 <html lang="da">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Afgangstavle - Høje Taastrup</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Min Togtavle</title>
     <style>
-        /* DSB Stations-look */
         body { 
-            background-color: #040d21; /* Mørkeblå stationsbaggrund */
+            background-color: #040d21; 
             color: #ffffff; 
-            font-family: 'Courier New', Courier, monospace, sans-serif; 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             margin: 0;
-            padding: 20px;
+            padding: 15px;
             display: flex;
             flex-direction: column;
             align-items: center;
+            -webkit-user-select: none;
+            user-select: none;
         }
         .skaerm {
             width: 100%;
-            max-width: 600px;
+            max-width: 480px;
             background: #020714;
-            border: 4px solid #1a2a4a;
-            border-radius: 8px;
+            border: 2px solid #1a2a4a;
+            border-radius: 12px;
             padding: 15px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+            box-sizing: border-box;
         }
         .header {
             border-bottom: 2px solid #1a2a4a;
-            padding-bottom: 10px;
+            padding-bottom: 12px;
             margin-bottom: 15px;
             display: flex;
             justify-content: space-between;
-            font-size: 0.9em;
-            color: #8da2cb;
+            align-items: center;
+        }
+        .klokken {
+            font-size: 1.4em;
+            font-weight: bold;
+            font-family: monospace;
+            color: #ffffff;
+            background: #0a1b3a;
+            padding: 4px 10px;
+            border-radius: 6px;
         }
         .station-navn {
-            font-size: 1.5em;
-            color: #ffffff;
-            font-weight: bold;
-            margin: 5px 0 15px 0;
+            font-size: 1.1em;
+            color: #8da2cb;
             text-transform: uppercase;
+            font-weight: bold;
             letter-spacing: 1px;
         }
         .tog-raekke {
@@ -47,55 +56,71 @@
             justify-content: space-between;
             align-items: center;
             background: #051330;
-            padding: 12px;
-            margin: 8px 0;
-            border-radius: 4px;
-            border-left: 6px solid #e30613; /* S-tog rød */
+            padding: 14px;
+            margin: 10px 0;
+            border-radius: 8px;
+            border-left: 6px solid #e30613;
         }
-        .linje-og-destination {
+        .linje-info {
             display: flex;
-            flex-direction: column;
+            align-items: center;
+            gap: 12px;
         }
-        .linje {
+        .ikon-b {
+            background: #e30613;
+            color: white;
             font-weight: bold;
-            color: #ffcc00; /* Klassisk gul info-farve */
-            font-size: 1.2em;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1em;
         }
         .destination {
             font-size: 1.1em;
-            margin-top: 2px;
+            font-weight: 500;
         }
         .tid-og-spor {
             text-align: right;
         }
-        .tid {
+        .minutter {
             font-size: 1.3em;
             font-weight: bold;
-            color: #ffffff;
+            color: #ffcc00;
         }
-        .forsinket {
-            color: #ff3333;
-        }
-        .spor {
-            font-size: 0.9em;
+        .klokkeslaet {
+            font-size: 0.85em;
             color: #8da2cb;
             margin-top: 2px;
         }
+        .forsinket {
+            color: #ff3333 !important;
+        }
+        .spor {
+            font-size: 0.8em;
+            background: #1a2a4a;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #ffffff;
+            display: inline-block;
+            margin-top: 4px;
+        }
         .ingen-tog {
             text-align: center;
-            padding: 20px;
+            padding: 30px;
             color: #8da2cb;
+            font-style: italic;
         }
     </style>
 </head>
 <body>
 
-    <div class="station-navn">Høje Taastrup St.</div>
-
     <div class="skaerm">
         <div class="header">
-            <div id="klokken">00:00:00</div>
-            <div>Afgange (Linje B)</div>
+            <div class="station-navn">Høje Taastrup</div>
+            <div id="live-ur" class="klokken">00:00</div>
         </div>
         <div id="tog-liste">Henter live-data...</div>
     </div>
@@ -103,10 +128,26 @@
     <script>
         const url = "https://rejseplanen.dk";
 
-        function opdaterKlokke() {
+        function opdaterUr() {
             const nu = new Date();
-            document.getElementById('klokken').innerText = nu.toLocaleTimeString('da-DK');
+            const timer = String(nu.getHours()).padStart(2, '0');
+            const minutter = String(nu.getMinutes()).padStart(2, '0');
+            document.getElementById('live-ur').innerText = `${timer}:${minutter}`;
         }
+
+        const definerMinutterTil = (togTidStr) => {
+            const nu = new Date();
+            const [timer, minutter] = togTidStr.split(':').map(Number);
+            const togTid = new Date();
+            togTid.setHours(timer, minutter, 0, 0);
+            
+            if (togTid < nu && (nu - togTid) > 12 * 60 * 60 * 1000) {
+                togTid.setDate(togTid.getDate() + 1);
+            }
+
+            const forskelMs = togTid - nu;
+            return Math.ceil(forskelMs / 1000 / 60);
+        };
 
         async function hentTogData() {
             try {
@@ -117,30 +158,30 @@
                 let html = "";
                 let fundetTog = false;
                 
-                // Sorter og filtrer data
                 departures.forEach(dep => {
                     if (dep.name === "S-tog B" && dep.direction.includes("Farum")) {
                         fundetTog = true;
+                        
                         const planlagtTid = dep.time;
                         const realTid = dep.rtTime;
                         const spor = dep.track || "-";
                         
-                        let tidsVisning = `<span class="tid">${planlagtTid}</span>`;
+                        const aktuelTid = realTid ? realTid : planlagtTid;
+                        const minutterTil = definerMinutterTil(aktuelTid);
                         
-                        // Hvis toget er forsinket
-                        if (realTid && realTid !== planlagtTid) {
-                            tidsVisning = `<span class="tid forsinket">${realTid}</span> <span class="spor">(${planlagtTid})</span>`;
-                        }
-                        
+                        let visningMinutter = minutterTil <= 0 ? "Nu" : `${minutterTil} min`;
+                        let statusKlasse = (realTid && realTid !== planlagtTid) ? "forsinket" : "";
+
                         html += `
                             <div class="tog-raekke">
-                                <div class="linje-og-destination">
-                                    <span class="linje">${dep.name}</span>
-                                    <span class="destination">mod ${dep.direction}</span>
+                                <div class="linje-info">
+                                    <div class="ikon-b">B</div>
+                                    <div class="destination">Farum</div>
                                 </div>
                                 <div class="tid-og-spor">
-                                    <div>${tidsVisning}</div>
-                                    <div class="spor">Spor ${spor}</div>
+                                    <div class="minutter ${statusKlasse}">${visningMinutter}</div>
+                                    <div class="klokkeslaet">Kl. ${aktuelTid}</div>
+                                    <div><span class="spor">Spor ${spor}</span></div>
                                 </div>
                             </div>
                         `;
@@ -150,15 +191,15 @@
                 document.getElementById('tog-liste').innerHTML = fundetTog ? html : '<div class="ingen-tog">Ingen planlagte tog mod Farum lige nu</div>';
                 
             } catch (error) {
-                document.getElementById('tog-liste').innerHTML = '<div class="ingen-tog" style="color:#ff3333;">Fejl ved forbindelse til Rejseplanen</div>';
+                document.getElementById('tog-liste').innerHTML = '<div class="ingen-tog" style="color:#ff3333;">Forbindelsesfejl...</div>';
             }
         }
 
-        // Udfør med det samme og sæt intervaller
-        setInterval(opdaterKlokke, 1000);
-        setInterval(hentTogData, 30000); // Opdaterer data hvert 30. sekund
-        opdaterKlokke();
+        setInterval(opdaterUr, 1000);
+        setInterval(hentTogData, 20000);
+        opdaterUr();
         hentTogData();
     </script>
 </body>
 </html>
+
